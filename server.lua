@@ -1,29 +1,130 @@
+Desync = nil
+TriggerEvent('desync-core-rp:GetSharedObject', function(obj) Desync = obj end)
 
--- Script by BreN --
+local characters = {}
 
-if Config.testnui then
+AddEventHandler("desync-multichar:DisplayCharacterSelection", function(netId)
+    TriggerClientEvent("desync-multichar:DisplayCharacterSelection", netId)
+end)
 
-    RegisterCommand('testnui', function(source, args, raw)
-        TriggerClientEvent('desync-multichar:ToggleNUI', source)
-    end, false)
+-- Get characters for player
+RegisterNetEvent('desync-multichar:getCharacters')
+AddEventHandler('desync-multichar:getCharacters', function()
+    local source = source
+    local baseIdentifier = string.match(GetPlayerIdentifier(source), ":(.*)")
+    
+    if not baseIdentifier then
+        print("^1[desync-multichar] Failed to get identifier for player " .. source .. "^7")
+        TriggerClientEvent('desync-multichar:setCharacters', source, {})
+        return
+    end
+    
+    -- Search for any character number (char1, char2, etc.)
+    local result = MySQL.query.await('SELECT * FROM Users WHERE Identifier LIKE ?', {'char%:' .. baseIdentifier})
+    print("^3[desync-multichar] Found characters for " .. baseIdentifier .. ": " .. json.encode(result) .. "^7")
+    
+    if not result or #result == 0 then
+        print("^3[desync-multichar] No characters found for identifier: " .. baseIdentifier .. "^7")
+        result = {}
+    end
+    
+    TriggerClientEvent('desync-multichar:setCharacters', source, result)
+end)
 
-    -- lib.addCommand('testnui', {
-    --     help = 'Tests NUI functionality',
-    --     -- params = {
-    --     --     {
-    --     --         name = 'enable',
-    --     --         type = 'enable',
-    --     --         help = "Target player's server id"
-    --     --     }
-    --     -- },
-    --     restricted = 'group.admin'
-    -- }, function(source, args, raw)
-    --     -- print(args)
-    --     -- for k, v in pairs(args) do
-    --     --     print(k)
-    --     --     print(v)
-    --     -- end
+-- Create new character
+RegisterNetEvent('desync-multichar:createCharacter')
+AddEventHandler('desync-multichar:createCharacter', function(data)
+    local source = source
+    local baseIdentifier = string.match(GetPlayerIdentifier(source), ":(.*)")
 
-    --     TriggerClientEvent('desync-multichar:ToggleNUI', source)
-    -- end)
-end
+    if not data.firstname or not data.lastname then
+        TriggerClientEvent('desync-multichar:createCharacterResponse', source, { 
+            success = false, 
+            error = "First name and last name are required" 
+        })
+        return
+    end
+    
+    -- Check for duplicate names
+    local duplicateCheck = MySQL.query.await([[
+        SELECT * FROM Users 
+        WHERE FirstName = ? AND LastName = ? 
+        AND Identifier LIKE ?
+    ]], {
+        data.firstname,
+        data.lastname,
+        'char%:' .. baseIdentifier
+    })
+    
+    if duplicateCheck and #duplicateCheck > 0 then
+        TriggerClientEvent('desync-multichar:createCharacterResponse', source, { 
+            success = false, 
+            error = "A character with this name already exists" 
+        })
+        return
+    end
+    
+    -- Get the current highest character number for this player
+    local result = MySQL.query.await('SELECT Identifier FROM Users WHERE Identifier LIKE ?', {'char%:' .. baseIdentifier})
+    
+    -- If no characters exist, start with char1, otherwise increment highest number
+    local nextCharNum = 1
+    if result and #result > 0 then
+        for _, row in ipairs(result) do
+            local charNum = tonumber(string.match(row.Identifier, "char(%d+):"))
+            if charNum and charNum >= nextCharNum then
+                nextCharNum = charNum + 1
+            end
+        end
+    end
+    
+    -- Create new identifier with character number
+    local newIdentifier = string.format("char%d:%s", nextCharNum, baseIdentifier)
+    
+    -- Default position for new characters
+    local defaultPosition = json.encode({x = -269.4, y = -955.3, z = 31.2})
+    
+    -- Insert the new character into the database
+    local success = MySQL.query.await([[
+        INSERT INTO Users 
+        (Identifier, FirstName, LastName, LastPosition) 
+        VALUES (?, ?, ?, ?)
+    ]], {
+        newIdentifier,
+        data.firstname,
+        data.lastname,
+        defaultPosition
+    })
+    
+    if success then
+        print("^2[desync-multichar] Created new character: " .. newIdentifier .. "^7")
+        TriggerClientEvent('desync-multichar:createCharacterResponse', source, { 
+            type = 'createCharacterResponse', 
+            success = true 
+        })
+        Wait(500)
+        local result = MySQL.query.await('SELECT * FROM Users WHERE Identifier LIKE ?', {'char%:' .. baseIdentifier})
+        TriggerClientEvent('desync-multichar:setCharacters', source, result or {})
+    else
+        print("^1[desync-multichar] Failed to create character for: " .. newIdentifier .. "^7")
+        TriggerClientEvent('desync-multichar:createCharacterResponse', source, { 
+            type = 'createCharacterResponse', 
+            success = false, 
+            error = "Failed to create character" 
+        })
+    end
+end)
+
+
+-- Delete character
+RegisterNetEvent('desync-multichar:deleteCharacter')
+AddEventHandler('desync-multichar:deleteCharacter', function(characterId)
+    local source = source
+    local baseIdentifier = string.match(GetPlayerIdentifier(source), ":(.*)")
+    print("^3[desync-multichar] Deleting character: " .. characterId .. "^7")
+    
+    MySQL.query.await('DELETE FROM Users WHERE Identifier = ?', {characterId})
+    
+    local result = MySQL.query.await('SELECT * FROM Users WHERE Identifier LIKE ?', {'char%:' .. baseIdentifier})
+    TriggerClientEvent('desync-multichar:setCharacters', source, result or {})
+end)

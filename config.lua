@@ -1,4 +1,3 @@
 Config = {}
-Config.debugEnabled = false
-
-Config.testnui = true
+Config.MaxCharacters = 8
+Config.debugEnabled = true

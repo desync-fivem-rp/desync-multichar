@@ -22,10 +22,13 @@ server_scripts {
   'server.lua'
 }
 
-ui_page('html/index.html')
+ui_page 'web/build/index.html'
 
 files {
-  'html/index.html',
-  'html/style.css',
-  'html/script.js'
+  'web/build/index.html',
+  'web/build/assets/*.js',
+  'web/build/assets/*.css',
+  'web/build/assets/*.png',
+  'web/build/assets/*.jpg',
+  'web/build/assets/*.svg'
 }
