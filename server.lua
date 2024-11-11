@@ -135,15 +135,19 @@ AddEventHandler('desync-multichar:deleteCharacter', function(characterId)
 end)
 
 RegisterNetEvent('desync-multichar:CharacterSelected')
-AddEventHandler('desync-multichar:CharacterSelected', function(characterId, spawnCoords)
+AddEventHandler('desync-multichar:CharacterSelected', function(characterId)
     local source = source
     
     -- Your existing character loading logic here
+
+    print("desync-multichar:CharacterSelected called")    
     
     -- Instead of using LastPosition, use the provided spawn coordinates
-    if spawnCoords then
-        TriggerEvent("desync-spawnmanager:SpawnCharacter", source, spawnCoords)
-    end
+    TriggerEvent("desync-core-rp:OnPlayerJoined", source, characterId)
+
+    -- if spawnCoords then
+    --     TriggerEvent("desync-spawnmanager:SpawnCharacter", source, spawnCoords)
+    -- end
 end)
 
 -- Add this at the top of your server.lua

@@ -1,21 +1,63 @@
 -- Add this at the top of your client.lua
 local firstSpawn = true
 
-AddEventHandler('playerSpawned', function()
-    if firstSpawn then
-        firstSpawn = false
+-- function Init()
+--     print("Init() called")
+--     if firstSpawn then
+--         print("First spawn")
+--         firstSpawn = false
         
-        -- Disable HUD
-        DisplayHud(false)
-        DisplayRadar(false)
+--         -- Disable HUD
+--         DisplayHud(false)
+--         DisplayRadar(false)
         
-        -- Trigger character selection
-        TriggerEvent("desync-multichar:DisplayCharacterSelection")
+--         -- Trigger character selection
+--         TriggerEvent("desync-multichar:DisplayCharacterSelection")
+--     end
+-- end
+
+Citizen.CreateThread(function()
+    while not NetworkIsPlayerActive(PlayerId()) do
+        print("NetworkIsPlayerActive is false")
+        Citizen.Wait(100)
     end
+
+    DoScreenFadeOut(0)
+    Citizen.Wait(500)
+    TriggerEvent("desync-multichar:DisplayCharacterSelection")
 end)
+
+-- AddEventHandler('onClientMapStart', function()
+--     print("onClientMapStart triggered")
+--     if firstSpawn then
+--         firstSpawn = false
+        
+--         -- Disable HUD
+--         DisplayHud(false)
+--         DisplayRadar(false)
+        
+--         -- Trigger character selection
+--         TriggerEvent("desync-multichar:DisplayCharacterSelection")
+--     end
+-- end)
+
+-- AddEventHandler("desync-spawnmanager:PlayerSpawned", function()
+--     print("Player spawned")
+--     if firstSpawn then
+--         firstSpawn = false
+        
+--         -- Disable HUD
+--         DisplayHud(false)
+--         DisplayRadar(false)
+        
+--         -- Trigger character selection
+--         TriggerEvent("desync-multichar:DisplayCharacterSelection")
+--     end
+-- end)
 
 -- Update your existing ShowCharacterSelect function
 local function ShowCharacterSelect()
+
     -- Hide HUD elements
     DisplayHud(false)
     DisplayRadar(false)
@@ -72,6 +114,7 @@ RegisterNUICallback('selectCharacter', function(data, cb)
     SetNuiFocus(false, false)
     -- Add your character spawn logic here
 
+    print('NUICallback selectCharacter called')
 
 	TriggerServerEvent("desync-multichar:CharacterSelected", data.characterId)
     cb({})
