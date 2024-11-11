@@ -5,6 +5,12 @@
  * @returns Response from the server
  */
 export async function fetchNui(eventName, data) {
+    const resourceName = window.GetParentResourceName 
+        ? window.GetParentResourceName() 
+        : 'desync-multichar'
+
+    console.log(`[fetchNui] Sending request to ${resourceName}/${eventName}`, data)
+    
     const options = {
         method: 'POST',
         headers: {
@@ -13,21 +19,24 @@ export async function fetchNui(eventName, data) {
         body: JSON.stringify(data),
     }
   
-    const resourceName = window.GetParentResourceName 
-        ? window.GetParentResourceName() 
-        : 'desync-multichar'
-  
     try {
+        console.log(`[fetchNui] Fetching from https://${resourceName}/${eventName}`)
         const resp = await fetch(`https://${resourceName}/${eventName}`, options)
+        console.log('[fetchNui] Raw response:', resp)
+        
         const responseText = await resp.text()
+        console.log('[fetchNui] Response text:', responseText)
         
         if (!responseText) {
-            return null // Return null instead of success=true
+            console.log('[fetchNui] Empty response, returning null')
+            return null
         }
 
-        return JSON.parse(responseText)
+        const parsedResponse = JSON.parse(responseText)
+        console.log('[fetchNui] Parsed response:', parsedResponse)
+        return parsedResponse
     } catch (error) {
-        console.error(`Error in fetchNui: ${error.message}`)
-        throw error // Throw the error instead of returning success=true
+        console.error(`[fetchNui] Error:`, error)
+        throw error
     }
 } 

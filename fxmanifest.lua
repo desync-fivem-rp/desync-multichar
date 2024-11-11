@@ -32,3 +32,9 @@ files {
   'web/build/assets/*.jpg',
   'web/build/assets/*.svg'
 }
+
+dependency 'spawnmanager'
+
+exports {
+    'ShowCharacterSelect'
+}

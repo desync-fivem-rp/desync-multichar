@@ -1,0 +1,18 @@
+/* Add this if you don't have a CSS file yet, or add to your existing styles */
+.character-select-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgb(0, 0, 0); /* Solid black background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.character-select {
+    /* Your existing character select styles */
+    position: relative;
+    z-index: 10;
+} 

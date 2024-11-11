@@ -13,6 +13,9 @@ AddEventHandler('desync-multichar:getCharacters', function()
     local source = source
     local baseIdentifier = string.match(GetPlayerIdentifier(source), ":(.*)")
     
+    print("^3[desync-multichar] Getting characters for source: " .. source .. "^7")
+    print("^3[desync-multichar] Base identifier: " .. tostring(baseIdentifier) .. "^7")
+    
     if not baseIdentifier then
         print("^1[desync-multichar] Failed to get identifier for player " .. source .. "^7")
         TriggerClientEvent('desync-multichar:setCharacters', source, {})
@@ -20,14 +23,16 @@ AddEventHandler('desync-multichar:getCharacters', function()
     end
     
     -- Search for any character number (char1, char2, etc.)
+    print("^3[desync-multichar] Querying database for characters^7")
     local result = MySQL.query.await('SELECT * FROM Users WHERE Identifier LIKE ?', {'char%:' .. baseIdentifier})
-    print("^3[desync-multichar] Found characters for " .. baseIdentifier .. ": " .. json.encode(result) .. "^7")
+    print("^3[desync-multichar] Database query result: " .. json.encode(result) .. "^7")
     
     if not result or #result == 0 then
         print("^3[desync-multichar] No characters found for identifier: " .. baseIdentifier .. "^7")
         result = {}
     end
     
+    print("^3[desync-multichar] Sending characters to client^7")
     TriggerClientEvent('desync-multichar:setCharacters', source, result)
 end)
 
@@ -127,4 +132,34 @@ AddEventHandler('desync-multichar:deleteCharacter', function(characterId)
     
     local result = MySQL.query.await('SELECT * FROM Users WHERE Identifier LIKE ?', {'char%:' .. baseIdentifier})
     TriggerClientEvent('desync-multichar:setCharacters', source, result or {})
+end)
+
+RegisterNetEvent('desync-multichar:CharacterSelected')
+AddEventHandler('desync-multichar:CharacterSelected', function(characterId, spawnCoords)
+    local source = source
+    
+    -- Your existing character loading logic here
+    
+    -- Instead of using LastPosition, use the provided spawn coordinates
+    if spawnCoords then
+        TriggerEvent("desync-spawnmanager:SpawnCharacter", source, spawnCoords)
+    end
+end)
+
+-- Add this at the top of your server.lua
+AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
+    local source = source
+    deferrals.defer()
+    deferrals.update("Checking player information...")
+    
+    -- Add any additional checks here if needed
+    
+    deferrals.done()
+end)
+
+-- Add this to handle when player fully connects
+AddEventHandler('playerJoining', function(oldId, newId)
+    local source = source
+    -- Trigger character selection as soon as they're ready
+    TriggerClientEvent("desync-multichar:DisplayCharacterSelection", source)
 end)

@@ -1,37 +1,60 @@
+-- Add this at the top of your client.lua
+local firstSpawn = true
 
-RegisterNetEvent("desync-multichar:DisplayCharacterSelection")
-AddEventHandler("desync-multichar:DisplayCharacterSelection", function()
-    ShowCharacterSelect()
+AddEventHandler('playerSpawned', function()
+    if firstSpawn then
+        firstSpawn = false
+        
+        -- Disable HUD
+        DisplayHud(false)
+        DisplayRadar(false)
+        
+        -- Trigger character selection
+        TriggerEvent("desync-multichar:DisplayCharacterSelection")
+    end
 end)
 
+-- Update your existing ShowCharacterSelect function
 local function ShowCharacterSelect()
-    print("^2[desync-multichar] Opening character select^7")
+    -- Hide HUD elements
+    DisplayHud(false)
+    DisplayRadar(false)
     
-    -- Hide UI first (in case it's already showing)
-    SendNUIMessage({
-        type = 'ui',
-        status = false,
-        action = 'showCharacterSelect'
-    })
-    
-    Wait(100) -- Small delay to ensure UI is reset
+    -- Hide the player temporarily
+    local ped = PlayerPedId()
+    SetEntityVisible(ped, false, false)
+    FreezeEntityPosition(ped, true)
+    SetEntityCoords(ped, 0, 0, 0) -- Move them out of view
     
     -- Show UI and set focus
     SetNuiFocus(true, true)
-		SendNUIMessage({
-			type = 'ui',
-			status = true,
-			action = 'showCharacterSelect',
-			maxCharacters = Config.MaxCharacters
+    
+    SendNUIMessage({
+        type = 'ui',
+        status = true,
+        action = 'showCharacterSelect',
+        maxCharacters = Config.MaxCharacters
     })
     
     -- Request characters from server
     TriggerServerEvent('desync-multichar:getCharacters')
 end
 
+-- Add this to prevent default spawning
+AddEventHandler('onClientMapStart', function()
+    exports.spawnmanager:setAutoSpawn(false)
+    return false
+end)
+
+RegisterNetEvent("desync-multichar:DisplayCharacterSelection")
+AddEventHandler("desync-multichar:DisplayCharacterSelection", function()
+    ShowCharacterSelect()
+end)
+
 -- Handle receiving characters from server
 RegisterNetEvent('desync-multichar:setCharacters')
 AddEventHandler('desync-multichar:setCharacters', function(dbCharacters)
+    print("^3[desync-multichar] Received characters from server: " .. json.encode(dbCharacters) .. "^7")
     SendNUIMessage({
         type = 'setCharacters',
         characters = dbCharacters
@@ -102,4 +125,21 @@ AddEventHandler('desync-multichar:show', function()
         status = true,
         maxCharacters = Config.MaxCharacters
     })
+end)
+
+-- Update this callback to match the UI's call
+RegisterNUICallback('spawnCharacter', function(data, cb)
+    print("^2[desync-multichar] Character selected: " .. json.encode(data) .. "^7")
+    SetNuiFocus(false, false)
+    
+    -- Hide character select UI
+    SendNUIMessage({
+        type = 'ui',
+        status = false
+    })
+
+    -- Show spawn selection UI and pass character ID
+    TriggerEvent("desync-spawnselect:ShowUI", data.characterId)
+    
+    cb({success = true})
 end)
