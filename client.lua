@@ -1,208 +1,63 @@
 -- Add this at the top of your client.lua
 local firstSpawn = true
 
--- Add these variables at the top with other locals
-local isRotatingCamera = false
-local lastMouseX = 0
-local currentCamRotation = 0.0
-local activeCam = nil
-
--- Add these constants at the top of the file
-local CHARACTER_ROOM = {
-    coords = vector3(915.4648, 51.8233, 114.0158), -- Starting camera position
-    heading = 250.6621, -- Adjusted heading to face the correct way
-    
-    -- Add positions table for character peds
-    positions = {
-        {
-            coords = vector3(911.6921, 53.7663, 111.1264),
-            heading = 125.1907,
-            animation = {dict = "timetable@jimmy@mics3_ig_15@", anim = "idle_a_jimmy"}
-        },
-        {
-            coords = vector3(910.8527, 51.2711, 111.1264),
-            heading = 26.4501,
-            animation = {dict = "timetable@jimmy@mics3_ig_15@", anim = "idle_a_jimmy"}
-        },
-        {
-            coords = vector3(909.4823, 51.0214, 111.1273),
-            heading = 344.3992,
-            animation = {dict = "timetable@jimmy@mics3_ig_15@", anim = "idle_a_jimmy"}
-        },
-        {
-            coords = vector3(910.5148, 54.6012, 111.1265),
-            heading = 165.6402,
-            animation = {dict = "timetable@jimmy@mics3_ig_15@", anim = "idle_a_jimmy"}
-        },
-        {
-            coords = vector3(906.8790, 53.8894, 111.2616),
-            heading = 242.5208,
-            animation = {dict = "timetable@jimmy@mics3_ig_15@", anim = "idle_a_jimmy"}
-        },
-        {
-            coords = vector3(912.2040, 54.1265, 111.6119),
-            heading = 304.3833,
-            animation = {dict = "timetable@jimmy@mics3_ig_15@", anim = "idle_a_jimmy"}
-        }
-    },
-    
-    -- Camera positions
-    cameras = {
-        overview = {
-            coords = vector3(915.4648, 51.8233, 114.0158),
-            point = vector3(910.4648, 51.8233, 112.1264), -- Adjusted to point at the center of the sitting area
-            fov = 60.0
-        },
-        character = {
-            offset = vector3(1.0, 1.0, 0.5),
-            fov = 40.0
-        }
-    }
-}
-
-AddEventHandler('onClientMapStart', function()
-    if firstSpawn then
-        firstSpawn = false
+-- function Init()
+--     print("Init() called")
+--     if firstSpawn then
+--         print("First spawn")
+--         firstSpawn = false
         
-        -- Disable HUD
-        DisplayHud(false)
-        DisplayRadar(false)
+--         -- Disable HUD
+--         DisplayHud(false)
+--         DisplayRadar(false)
         
-        -- Trigger character selection
-        TriggerEvent("desync-multichar:DisplayCharacterSelection")
+--         -- Trigger character selection
+--         TriggerEvent("desync-multichar:DisplayCharacterSelection")
+--     end
+-- end
+
+Citizen.CreateThread(function()
+    while not NetworkIsPlayerActive(PlayerId()) do
+        print("NetworkIsPlayerActive is false")
+        Citizen.Wait(100)
     end
+
+    DoScreenFadeOut(0)
+    Citizen.Wait(500)
+    TriggerEvent("desync-multichar:DisplayCharacterSelection")
 end)
 
--- Add these new functions at the top
-local function SetupCharacterRoom()
-    local ped = PlayerPedId()
-    
-    -- Teleport player to loading coords (out of view)
-    SetEntityCoords(ped, CHARACTER_ROOM.coords.x, CHARACTER_ROOM.coords.y, CHARACTER_ROOM.coords.z - 10.0)
-    
-    -- Hide player
-    SetEntityVisible(ped, false, false)
-    FreezeEntityPosition(ped, true)
-    
-    -- Set up initial camera
-    local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-    local overview = CHARACTER_ROOM.cameras.overview
-    
-    SetCamCoord(cam, overview.coords.x, overview.coords.y, overview.coords.z)
-    PointCamAtCoord(cam, overview.point.x, overview.point.y, overview.point.z)
-    SetCamFov(cam, overview.fov)
-    SetCamRot(cam, 0.0, 0.0, CHARACTER_ROOM.heading, 2)
-    
-    SetCamActive(cam, true)
-    RenderScriptCams(true, false, 1000, true, true)
-    
-    -- Store the active camera
-    activeCam = cam
-    
-    return cam
-end
+-- AddEventHandler('onClientMapStart', function()
+--     print("onClientMapStart triggered")
+--     if firstSpawn then
+--         firstSpawn = false
+        
+--         -- Disable HUD
+--         DisplayHud(false)
+--         DisplayRadar(false)
+        
+--         -- Trigger character selection
+--         TriggerEvent("desync-multichar:DisplayCharacterSelection")
+--     end
+-- end)
 
-local characterPeds = {}
-
-local function SetupCharacterPeds(characters)
-    -- print("^3[desync-multichar] Setting up character peds with data:", json.encode(characters))
-    
-    -- Clear existing peds
-    for _, pedInfo in pairs(characterPeds) do
-        if DoesEntityExist(pedInfo.ped) then
-            DeleteEntity(pedInfo.ped)
-            DeletePed(pedInfo.ped)
-        end
-    end
-    characterPeds = {}
-    
-    -- Safety check for characters
-    if not characters or type(characters) ~= "table" then
-        -- print("^1[desync-multichar] No valid characters data provided^7")
-        return
-    end
-    
-    -- Create new peds for each character
-    for i, character in ipairs(characters) do
-        if CHARACTER_ROOM.positions[i] then
-            local position = CHARACTER_ROOM.positions[i]
-            
-            -- Safety check for character ID
-            if not character.id then
-                -- print("^1[desync-multichar] Character missing ID at index " .. i .. "^7")
-                goto continue
-            end
-            
-            -- print("^3[desync-multichar] Creating ped for character:", json.encode(character))
-            
-            -- Create ped
-            local model = GetHashKey("mp_m_freemode_01")
-            RequestModel(model)
-            while not HasModelLoaded(model) do Wait(0) end
-            
-            local ped = CreatePed(4, model, 
-                position.coords.x, position.coords.y, position.coords.z, 
-                position.heading, false, true)
-                
-            -- Set up ped
-            FreezeEntityPosition(ped, true)
-            SetEntityInvincible(ped, true)
-            SetBlockingOfNonTemporaryEvents(ped, true)
-            
-            -- Apply animation if specified
-            if position.animation then
-                RequestAnimDict(position.animation.dict)
-                while not HasAnimDictLoaded(position.animation.dict) do Wait(0) end
-                
-                TaskPlayAnim(ped, 
-                    position.animation.dict, position.animation.anim,
-                    8.0, -8.0, -1, 1, 0, false, false, false)
-            end
-            
-            -- Store ped reference
-            characterPeds[character.id] = {
-                ped = ped,
-                position = position
-            }
-            
-            ::continue::
-        end
-    end
-    
-    SetModelAsNoLongerNeeded(model)
-end
-
-local function FocusOnCharacter(characterId)
-    local pedInfo = characterPeds[characterId]
-    if not pedInfo then return end
-    
-    -- Create new camera
-    local newCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-    local offset = CHARACTER_ROOM.cameras.character.offset
-    local pedCoords = GetEntityCoords(pedInfo.ped)
-    
-    -- Position camera relative to ped
-    local camCoords = vector3(
-        pedCoords.x - offset.x,
-        pedCoords.y - offset.y,
-        pedCoords.z + offset.z
-    )
-    
-    SetCamCoord(newCam, camCoords.x, camCoords.y, camCoords.z)
-    PointCamAtEntity(newCam, pedInfo.ped, 0.0, 0.0, 0.0, true)
-    SetCamFov(newCam, CHARACTER_ROOM.cameras.character.fov)
-    
-    -- Smooth transition to new camera
-    SetCamActiveWithInterp(newCam, activeCam, 1000, true, true)
-    
-    -- Update active camera
-    activeCam = newCam
-    
-    return newCam
-end
+-- AddEventHandler("desync-spawnmanager:PlayerSpawned", function()
+--     print("Player spawned")
+--     if firstSpawn then
+--         firstSpawn = false
+        
+--         -- Disable HUD
+--         DisplayHud(false)
+--         DisplayRadar(false)
+        
+--         -- Trigger character selection
+--         TriggerEvent("desync-multichar:DisplayCharacterSelection")
+--     end
+-- end)
 
 -- Update your existing ShowCharacterSelect function
 local function ShowCharacterSelect()
+
     -- Hide HUD elements
     DisplayHud(false)
     DisplayRadar(false)
@@ -292,6 +147,7 @@ RegisterNUICallback('selectCharacter', function(data, cb)
     SetNuiFocus(false, false)
     -- Add your character spawn logic here
 
+    print('NUICallback selectCharacter called')
 
 	TriggerServerEvent("desync-multichar:CharacterSelected", data.characterId)
     cb({})

@@ -158,19 +158,19 @@ end)
 
 -- Update CharacterSelected event
 RegisterNetEvent('desync-multichar:CharacterSelected')
-AddEventHandler('desync-multichar:CharacterSelected', function(characterId, spawnCoords)
+AddEventHandler('desync-multichar:CharacterSelected', function(characterId)
     local source = source
     
-    -- Reset player's routing bucket to public (0)
-    SetPlayerRoutingBucket(source, 0)
-    playerBuckets[source] = nil
+    -- Your existing character loading logic here
+
+    print("desync-multichar:CharacterSelected called")    
     
-    print("^3[desync-multichar] Player " .. source .. " returning to public bucket^7")
-    
-    -- Spawn character at selected location
-    if spawnCoords then
-        TriggerEvent("desync-spawnmanager:SpawnCharacter", source, spawnCoords)
-    end
+    -- Instead of using LastPosition, use the provided spawn coordinates
+    TriggerEvent("desync-core-rp:OnPlayerJoined", source, characterId)
+
+    -- if spawnCoords then
+    --     TriggerEvent("desync-spawnmanager:SpawnCharacter", source, spawnCoords)
+    -- end
 end)
 
 -- Add this at the top of your server.lua
