@@ -26,11 +26,7 @@ ui_page 'web/build/index.html'
 
 files {
   'web/build/index.html',
-  'web/build/assets/*.js',
-  'web/build/assets/*.css',
-  'web/build/assets/*.png',
-  'web/build/assets/*.jpg',
-  'web/build/assets/*.svg'
+  'web/build/**/*'
 }
 
 dependency 'spawnmanager'

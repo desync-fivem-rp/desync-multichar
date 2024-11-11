@@ -3,7 +3,22 @@ TriggerEvent('desync-core-rp:GetSharedObject', function(obj) Desync = obj end)
 
 local characters = {}
 
+-- Add at the top with other variables
+local BUCKET_CHARACTER_SELECT_BASE = 100  -- Base number for character select buckets
+local playerBuckets = {}  -- Track player buckets
+
+-- Update the DisplayCharacterSelection handler
 AddEventHandler("desync-multichar:DisplayCharacterSelection", function(netId)
+    -- Create unique bucket for this player
+    local playerBucket = BUCKET_CHARACTER_SELECT_BASE + netId
+    playerBuckets[netId] = playerBucket
+    
+    print("^3[desync-multichar] Moving player " .. netId .. " to character select bucket: " .. playerBucket .. "^7")
+    
+    -- Set player's routing bucket
+    SetPlayerRoutingBucket(netId, playerBucket)
+    
+    -- Trigger character selection
     TriggerClientEvent("desync-multichar:DisplayCharacterSelection", netId)
 end)
 
@@ -30,6 +45,13 @@ AddEventHandler('desync-multichar:getCharacters', function()
     if not result or #result == 0 then
         print("^3[desync-multichar] No characters found for identifier: " .. baseIdentifier .. "^7")
         result = {}
+    end
+    
+    -- Process results to ensure each character has an ID
+    for _, char in ipairs(result) do
+        if not char.id then
+            char.id = char.Identifier
+        end
     end
     
     print("^3[desync-multichar] Sending characters to client^7")
@@ -134,13 +156,18 @@ AddEventHandler('desync-multichar:deleteCharacter', function(characterId)
     TriggerClientEvent('desync-multichar:setCharacters', source, result or {})
 end)
 
+-- Update CharacterSelected event
 RegisterNetEvent('desync-multichar:CharacterSelected')
 AddEventHandler('desync-multichar:CharacterSelected', function(characterId, spawnCoords)
     local source = source
     
-    -- Your existing character loading logic here
+    -- Reset player's routing bucket to public (0)
+    SetPlayerRoutingBucket(source, 0)
+    playerBuckets[source] = nil
     
-    -- Instead of using LastPosition, use the provided spawn coordinates
+    print("^3[desync-multichar] Player " .. source .. " returning to public bucket^7")
+    
+    -- Spawn character at selected location
     if spawnCoords then
         TriggerEvent("desync-spawnmanager:SpawnCharacter", source, spawnCoords)
     end
@@ -162,4 +189,13 @@ AddEventHandler('playerJoining', function(oldId, newId)
     local source = source
     -- Trigger character selection as soon as they're ready
     TriggerClientEvent("desync-multichar:DisplayCharacterSelection", source)
+end)
+
+-- Add cleanup for disconnected players
+AddEventHandler('playerDropped', function()
+    local source = source
+    if playerBuckets[source] then
+        SetPlayerRoutingBucket(source, 0)
+        playerBuckets[source] = nil
+    end
 end)

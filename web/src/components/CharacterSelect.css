@@ -1,18 +1,129 @@
 /* Add this if you don't have a CSS file yet, or add to your existing styles */
 .character-select-container {
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgb(0, 0, 0); /* Solid black background */
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+    padding: 1rem;
+    width: 100%;
+}
+
+.character-select-bottom {
+    width: 100%;
+    position: relative;
+}
+
+.character-list {
     display: flex;
+    gap: 1rem;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.character-card {
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 1rem;
+    border-radius: 8px;
+    width: 200px;
+    height: 120px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+    text-align: center;
+    backdrop-filter: blur(5px);
+    display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
 
-.character-select {
-    /* Your existing character select styles */
-    position: relative;
-    z-index: 10;
+.character-card.empty {
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.character-card:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-5px);
+}
+
+.character-card.selected {
+    border-color: #0080ff;
+    transform: translateY(-5px);
+    box-shadow: 0 0 15px rgba(0, 128, 255, 0.3);
+}
+
+.character-card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.character-card.new-character {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 128, 255, 0.15);
+    border: 2px dashed rgba(255, 255, 255, 0.4);
+}
+
+.spawn-button, .delete-button {
+    padding: 0.8rem 2rem;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.spawn-button {
+    background: #0080ff;
+}
+
+.spawn-button:hover {
+    background: #0066cc;
+    transform: translateY(-2px);
+}
+
+.delete-button {
+    background: #ff3333;
+}
+
+.delete-button:hover {
+    background: #cc0000;
+    transform: translateY(-2px);
+}
+
+/* Add custom scrollbar for the character list */
+.character-list::-webkit-scrollbar {
+    height: 5px;
+}
+
+.character-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.character-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+}
+
+.character-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Add styles for the action buttons container */
+.character-actions {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
 } 

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react'
 import { fetchNui } from '../utils/fetchNui'
 import CharacterList from './CharacterList'
 import CreateCharacter from './CreateCharacter'
+import './CharacterSelect.css'
 
 function CharacterSelect() {
   const [characters, setCharacters] = useState([])
   const [view, setView] = useState('list') // 'list' or 'create'
   const [visible, setVisible] = useState(false)
   const [maxCharacters, setMaxCharacters] = useState(6) // Default value
+  const [selectedCharacter, setSelectedCharacter] = useState(null)
+  const [cameraMode, setCameraMode] = useState('overview') // 'overview' or 'focused'
   
   const refreshCharacters = async () => {
     console.log('[CharacterSelect] Attempting to refresh characters')
@@ -29,6 +32,12 @@ function CharacterSelect() {
       if (data.type === 'ui') {
         console.log('[CharacterSelect] UI visibility changed:', data.status)
         setVisible(data.status)
+        if (!data.status) {
+          // Clean up when hiding UI
+          setSelectedCharacter(null)
+          setView('list')
+          fetchNui('desync-multichar:hideui')
+        }
         if (data.maxCharacters) {
           console.log('[CharacterSelect] Max characters set to:', data.maxCharacters)
           setMaxCharacters(data.maxCharacters)
@@ -48,6 +57,8 @@ function CharacterSelect() {
     return () => {
       console.log('[CharacterSelect] Component unmounting, removing event listener')
       window.removeEventListener('message', handleMessage)
+      // Clean up when component unmounts
+      fetchNui('desync-multichar:hideui')
     }
   }, [])
 
@@ -56,24 +67,39 @@ function CharacterSelect() {
     console.log('[CharacterSelect] Visibility changed:', visible)
   }, [visible])
 
+  // Prevent right-click menu when rotating camera
+  const handleContextMenu = (e) => {
+    e.preventDefault()
+  }
+
+  useEffect(() => {
+    document.addEventListener('contextmenu', handleContextMenu)
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu)
+    }
+  }, [])
+
   if (!visible) {
     return null
   }
 
   const handleCharacterSelect = async (charId) => {
+    setSelectedCharacter(charId)
+    setCameraMode('focused')
+    // Send NUI message to move camera
+    await fetchNui('focusCharacter', { characterId: charId })
+  }
+
+  const handleSpawnConfirm = async () => {
+    if (!selectedCharacter) return
+    
     try {
-        console.log('[CharacterSelect] Attempting to spawn character:', charId)
-        const response = await fetchNui('spawnCharacter', { characterId: charId })
-        console.log('[CharacterSelect] Spawn response:', response)
-        
-        if (response && response.success) {
-            console.log('[CharacterSelect] Character spawn successful')
-            setVisible(false)
-        } else {
-            console.error('[CharacterSelect] Character spawn failed:', response)
-        }
+      const response = await fetchNui('spawnCharacter', { characterId: selectedCharacter })
+      if (response && response.success) {
+        setVisible(false)
+      }
     } catch (error) {
-        console.error('[CharacterSelect] Error spawning character:', error)
+      console.error('[CharacterSelect] Error spawning character:', error)
     }
   }
 
@@ -94,24 +120,62 @@ function CharacterSelect() {
 
   return (
     <div className="character-select-container">
-      <div className="character-select">
-        {view === 'list' ? (
-          <CharacterList 
-            characters={characters}
-            maxCharacters={maxCharacters}
-            onSelect={handleCharacterSelect}
-            onDelete={handleCharacterDelete}
-            onCreateNew={() => setView('create')}
-          />
-        ) : (
-          <CreateCharacter 
-            onCancel={() => setView('list')}
-            onCreated={handleCharacterCreated}
-            characters={characters}
-            maxCharacters={maxCharacters}
-          />
-        )}
-      </div>
+      {view === 'list' ? (
+        <div className="character-select-bottom">
+          {selectedCharacter && (
+            <div className="character-actions">
+              <button 
+                className="spawn-button"
+                onClick={handleSpawnConfirm}
+              >
+                Play Character
+              </button>
+              <button 
+                className="delete-button"
+                onClick={() => handleCharacterDelete(selectedCharacter)}
+              >
+                Delete Character
+              </button>
+            </div>
+          )}
+          <div className="character-list">
+            {[...Array(maxCharacters)].map((_, index) => {
+                const char = characters[index];
+                if (char) {
+                    return (
+                        <div 
+                            key={char.id}
+                            className={`character-card ${selectedCharacter === char.id ? 'selected' : ''}`}
+                            onClick={() => handleCharacterSelect(char.id)}
+                        >
+                            <h3>{char.FirstName} {char.LastName}</h3>
+                            <div className="character-info">
+                                <p>Cash: ${char.Money || 0}</p>
+                            </div>
+                        </div>
+                    );
+                } else {
+                    return (
+                        <div 
+                            key={`empty-${index}`}
+                            className="character-card empty"
+                            onClick={() => setView('create')}
+                        >
+                            <span>Create Character</span>
+                        </div>
+                    );
+                }
+            })}
+          </div>
+        </div>
+      ) : (
+        <CreateCharacter 
+          onCancel={() => setView('list')}
+          onCreated={handleCharacterCreated}
+          characters={characters}
+          maxCharacters={maxCharacters}
+        />
+      )}
     </div>
   )
 }
