@@ -372,3 +372,22 @@ AddEventHandler("desync-multichar:cleanup", function()
     print("^3[desync-multichar] Cleanup triggered from spawn selection^7")
     CleanupCharacterSelect()
 end)
+
+RegisterNUICallback('switchToSpawnSelect', function(data, cb)
+    if not data.characterId then return cb({ success = false }) end
+    
+    -- Hide character select UI
+    SendNUIMessage({
+        type = 'ui',
+        status = false
+    })
+    SetNuiFocus(false, false)
+
+    -- Clean up character select
+    CleanupCharacterSelect()
+    
+    -- Trigger spawn selection UI
+    TriggerEvent("desync-spawnselect:ShowUI", data.characterId)
+    
+    cb({success = true})
+end)

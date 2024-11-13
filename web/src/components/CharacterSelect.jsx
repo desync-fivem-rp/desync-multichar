@@ -94,12 +94,11 @@ function CharacterSelect() {
     if (!selectedCharacter) return
     
     try {
-      const response = await fetchNui('spawnCharacter', { characterId: selectedCharacter })
-      if (response && response.success) {
+        // Just tell the client to switch to spawn selection
+        await fetchNui('switchToSpawnSelect', { characterId: selectedCharacter })
         setVisible(false)
-      }
     } catch (error) {
-      console.error('[CharacterSelect] Error spawning character:', error)
+        console.error('[CharacterSelect] Error switching to spawn selection:', error)
     }
   }
 
