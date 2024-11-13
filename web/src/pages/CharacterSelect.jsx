@@ -62,7 +62,7 @@ function CharacterSelect() {
             ) : (
               characters.map(char => (
                 <div 
-                  key={char.id} 
+                  key={char.Identifierentifier} 
                   className="character-card" 
                   style={{
                     padding: '20px',
@@ -72,8 +72,8 @@ function CharacterSelect() {
                     cursor: 'pointer'
                   }}
                   onClick={() => {
-                    console.log('Selected character:', char.id)
-                    fetchNui('selectCharacter', { characterId: char.id })
+                    console.log('Selected character:', char.Identifier)
+                    fetchNui('selectCharacter', { characterId: char.Identifier })
                   }}
                 >
                   {char.FirstName} {char.LastName}

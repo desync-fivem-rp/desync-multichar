@@ -143,9 +143,9 @@ function CharacterSelect() {
                 if (char) {
                     return (
                         <div 
-                            key={char.id}
-                            className={`character-card ${selectedCharacter === char.id ? 'selected' : ''}`}
-                            onClick={() => handleCharacterSelect(char.id)}
+                            key={char.Identifier}
+                            className={`character-card ${selectedCharacter === char.Identifier ? 'selected' : ''}`}
+                            onClick={() => handleCharacterSelect(char.Identifier)}
                         >
                             <h3>{char.FirstName} {char.LastName}</h3>
                             <div className="character-info">

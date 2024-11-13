@@ -13,7 +13,7 @@ AddEventHandler("desync-multichar:DisplayCharacterSelection", function(netId)
     local playerBucket = BUCKET_CHARACTER_SELECT_BASE + netId
     playerBuckets[netId] = playerBucket
     
-    print("^3[desync-multichar] Moving player " .. netId .. " to character select bucket: " .. playerBucket .. "^7")
+    -- print("^3[desync-multichar] Moving player " .. netId .. " to character select bucket: " .. playerBucket .. "^7")
     
     -- Set player's routing bucket
     SetPlayerRoutingBucket(netId, playerBucket)
@@ -23,40 +23,65 @@ AddEventHandler("desync-multichar:DisplayCharacterSelection", function(netId)
 end)
 
 -- Get characters for player
-RegisterNetEvent('desync-multichar:getCharacters')
-AddEventHandler('desync-multichar:getCharacters', function()
+lib.callback.register("desync-multichar:getCharacters", function(source)
     local source = source
     local baseIdentifier = string.match(GetPlayerIdentifier(source), ":(.*)")
-    
-    print("^3[desync-multichar] Getting characters for source: " .. source .. "^7")
-    print("^3[desync-multichar] Base identifier: " .. tostring(baseIdentifier) .. "^7")
-    
+
     if not baseIdentifier then
-        print("^1[desync-multichar] Failed to get identifier for player " .. source .. "^7")
-        TriggerClientEvent('desync-multichar:setCharacters', source, {})
+        print("Failed to get identifier for player " .. source)
         return
     end
-    
-    -- Search for any character number (char1, char2, etc.)
-    print("^3[desync-multichar] Querying database for characters^7")
-    local result = MySQL.query.await('SELECT * FROM Users WHERE Identifier LIKE ?', {'char%:' .. baseIdentifier})
-    print("^3[desync-multichar] Database query result: " .. json.encode(result) .. "^7")
-    
+
+    local result = MySQL.query.await("SELECT * FROM Users WHERE Identifier LIKE ?", {"char%:" .. baseIdentifier})
+
     if not result or #result == 0 then
-        print("^3[desync-multichar] No characters found for identifier: " .. baseIdentifier .. "^7")
-        result = {}
+        print("No characters found for identifier: " .. baseIdentifier)
     end
-    
-    -- Process results to ensure each character has an ID
-    for _, char in ipairs(result) do
-        if not char.id then
-            char.id = char.Identifier
-        end
-    end
-    
-    print("^3[desync-multichar] Sending characters to client^7")
-    TriggerClientEvent('desync-multichar:setCharacters', source, result)
+
+    -- for _, char in ipairs(result) do
+    --     if not char.id then
+    --         char.id = char.Identifier
+    --     end
+    -- end
+
+    return result
 end)
+
+-- Get characters for player
+-- RegisterNetEvent('desync-multichar:getCharacters')
+-- AddEventHandler('desync-multichar:getCharacters', function()
+--     local source = source
+--     local baseIdentifier = string.match(GetPlayerIdentifier(source), ":(.*)")
+    
+--     print("^3[desync-multichar] Getting characters for source: " .. source .. "^7")
+--     print("^3[desync-multichar] Base identifier: " .. tostring(baseIdentifier) .. "^7")
+    
+--     if not baseIdentifier then
+--         print("^1[desync-multichar] Failed to get identifier for player " .. source .. "^7")
+--         TriggerClientEvent('desync-multichar:setCharacters', source, {})
+--         return
+--     end
+    
+--     -- Search for any character number (char1, char2, etc.)
+--     print("^3[desync-multichar] Querying database for characters^7")
+--     local result = MySQL.query.await('SELECT * FROM Users WHERE Identifier LIKE ?', {'char%:' .. baseIdentifier})
+--     print("^3[desync-multichar] Database query result: " .. json.encode(result) .. "^7")
+    
+--     if not result or #result == 0 then
+--         print("^3[desync-multichar] No characters found for identifier: " .. baseIdentifier .. "^7")
+--         result = {}
+--     end
+    
+--     -- Process results to ensure each character has an ID
+--     for _, char in ipairs(result) do
+--         if not char.id then
+--             char.id = char.Identifier
+--         end
+--     end
+    
+--     print("^3[desync-multichar] Sending characters to client^7")
+--     TriggerClientEvent('desync-multichar:setCharacters', source, result)
+-- end)
 
 -- Create new character
 RegisterNetEvent('desync-multichar:createCharacter')
