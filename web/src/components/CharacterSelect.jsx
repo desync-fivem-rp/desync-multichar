@@ -13,12 +13,11 @@ function CharacterSelect() {
   const [cameraMode, setCameraMode] = useState('overview') // 'overview' or 'focused'
   
   const refreshCharacters = async () => {
-    // console.log('[CharacterSelect] Attempting to refresh characters')
     try {
-      const response = await fetchNui('getCharacters')
-      // console.log('[CharacterSelect] getCharacters response:', response)
+      const result = await fetchNui('getCharacters')
+      setCharacters(Array.isArray(result) ? result : [])
     } catch (error) {
-      // console.error('[CharacterSelect] Error refreshing characters:', error)
+      console.error('[CharacterSelect] Error refreshing characters:', error)
     }
   }
 
@@ -103,6 +102,7 @@ function CharacterSelect() {
         // console.error('[CharacterSelect] Error switching to spawn selection:', error)
     }
   }
+  
 
   const handleCharacterDelete = async (charId) => {
     try {
@@ -151,7 +151,7 @@ function CharacterSelect() {
                         >
                             <h3>{char.FirstName} {char.LastName}</h3>
                             <div className="character-info">
-                                <p>Cash: ${char.Money || 0}</p>
+                                {/* <p>Cash: ${char.Money || 0}</p> */}
                             </div>
                         </div>
                     );

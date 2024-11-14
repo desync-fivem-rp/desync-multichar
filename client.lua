@@ -14,7 +14,7 @@ function Init()
         end
     
         DoScreenFadeOut(0)
-        Citizen.Wait(500)
+        Citizen.Wait(2000)
         -- TriggerEvent("desync-multichar:DisplayCharacterSelection")
         DisplayCharacterSelection()
     end)
@@ -89,16 +89,21 @@ function FocusOnCharacter(characterId)
     local newCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
     local offset = Config.CHARACTER_ROOM.cameras.character.offset
     local pedCoords = GetEntityCoords(pedInfo.ped)
+    local pedHeading = pedInfo.position.heading
     
-    -- Position camera relative to ped
+    -- Calculate camera position based on ped's heading
+    -- Convert heading to radians and adjust for FiveM's heading system
+    local headingRad = math.rad((pedHeading + 90) % 360)
+    
+    -- Calculate camera position using trigonometry
     local camCoords = vector3(
-        pedCoords.x - offset.x,
-        pedCoords.y - offset.y,
+        pedCoords.x + (offset.x * math.cos(headingRad)),
+        pedCoords.y + (offset.x * math.sin(headingRad)),
         pedCoords.z + offset.z
     )
     
     SetCamCoord(newCam, camCoords.x, camCoords.y, camCoords.z)
-    PointCamAtEntity(newCam, pedInfo.ped, 0.0, 0.0, 0.0, true)
+    PointCamAtEntity(newCam, pedInfo.ped, 0.0, 0.3, 0.0, true)
     SetCamFov(newCam, Config.CHARACTER_ROOM.cameras.character.fov)
     
     -- Smooth transition to new camera
@@ -110,94 +115,36 @@ function FocusOnCharacter(characterId)
     return newCam
 end
 
--- AddEventHandler('onClientMapStart', function()
---     print("onClientMapStart triggered")
---     if firstSpawn then
---         firstSpawn = false
-        
---         -- Disable HUD
---         DisplayHud(false)
---         DisplayRadar(false)
-        
---         -- Trigger character selection
---         TriggerEvent("desync-multichar:DisplayCharacterSelection")
---     end
--- end)
-
--- AddEventHandler("desync-spawnmanager:PlayerSpawned", function()
---     print("Player spawned")
---     if firstSpawn then
---         firstSpawn = false
-        
---         -- Disable HUD
---         DisplayHud(false)
---         DisplayRadar(false)
-        
---         -- Trigger character selection
---         TriggerEvent("desync-multichar:DisplayCharacterSelection")
---     end
--- end)
-
--- Update your existing ShowCharacterSelect function
--- function ShowCharacterSelect()
-
---     -- Hide HUD elements
---     DisplayHud(false)
---     DisplayRadar(false)
+------This function below works, just testing a different one
+-- function FocusOnCharacter(characterId)
+--     local pedInfo = characterPeds[characterId]
+--     if not pedInfo then return end
     
---     -- Set up the character room
---     local cam = SetupCharacterRoom()
+--     -- Create new camera
+--     local newCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+--     local offset = Config.CHARACTER_ROOM.cameras.character.offset
+--     local pedCoords = GetEntityCoords(pedInfo.ped)
     
---     -- Show UI and set focus
---     SetNuiFocus(true, true)
---     SendNUIMessage({
---         type = 'ui',
---         status = true,
---         action = 'showCharacterSelect',
---         maxCharacters = Config.MaxCharacters
---     })
+--     -- Position camera relative to ped
+--     local camCoords = vector3(
+--         pedCoords.x - offset.x,
+--         pedCoords.y - offset.y,
+--         pedCoords.z + offset.z
+--     )
     
---     -- Request characters from server
---     TriggerServerEvent('desync-multichar:getCharacters')
+--     SetCamCoord(newCam, camCoords.x, camCoords.y, camCoords.z)
+--     PointCamAtEntity(newCam, pedInfo.ped, 0.0, 0.0, 0.0, true)
+--     SetCamFov(newCam, Config.CHARACTER_ROOM.cameras.character.fov)
+    
+--     -- Smooth transition to new camera
+--     SetCamActiveWithInterp(newCam, activeCam, 1000, true, true)
+    
+--     -- Update active camera
+--     activeCam = newCam
+    
+--     return newCam
 -- end
 
--- Add this to prevent default spawning
--- AddEventHandler('onClientMapStart', function()
---     exports.spawnmanager:setAutoSpawn(false)
---     return false
--- end)
-
--- Update the character selection display event
--- RegisterNetEvent("desync-multichar:DisplayCharacterSelection")
--- AddEventHandler("desync-multichar:DisplayCharacterSelection", function()
---     -- Set up character selection
---     SetupCharacterRoom()
-    
---     -- Disable HUD and radar before showing UI
---     DisplayHud(false)
---     DisplayRadar(false)
-    
---     -- Make sure NUI focus is properly set with both mouse and keyboard input
---     SetNuiFocus(true, true)
-    
---     -- Set cursor to center of screen
---     SetCursorLocation(0.5, 0.5)
-    
---     -- Show UI with full screen resolution
---     local screenW, screenH = GetActiveScreenResolution()
---     SendNUIMessage({
---         type = 'ui',
---         status = true,
---         maxCharacters = 6,
---         resolution = {
---             width = screenW,
---             height = screenH
---         }
---     })
-    
---     -- Request characters from server
---     TriggerServerEvent('desync-multichar:getCharacters')
--- end)
 
 function SetCharacters(dbCharacters)
     if not dbCharacters then
@@ -205,8 +152,6 @@ function SetCharacters(dbCharacters)
         return 
     end
     
-    -- Store characters for later use
-    -- characters = dbCharacters
     
     -- Set up the peds immediately when we get the character data
     SetupCharacterPeds(dbCharacters)
@@ -233,14 +178,6 @@ function SetupCharacterPeds(characters)
     for i, character in ipairs(characters) do
         -- if Config.CHARACTER_ROOM.positions[i] then
         local position = Config.CHARACTER_ROOM.positions[i]
-        
-        -- Safety check for character ID
-        -- if not character.id then
-        --     -- print("^1[desync-multichar] Character missing ID at index " .. i .. "^7")
-        --     goto continue
-        -- end
-        
-        -- print("^3[desync-multichar] Creating ped for character:", json.encode(character))
         
         -- Create ped
         local model = GetHashKey("mp_m_freemode_01")
@@ -279,25 +216,6 @@ function SetupCharacterPeds(characters)
     SetModelAsNoLongerNeeded(model)
 end
 
--- Update the character data event handler
--- RegisterNetEvent('desync-multichar:setCharacters')
--- AddEventHandler('desync-multichar:setCharacters', function(dbCharacters)
---     if not dbCharacters then return end
-    
---     -- print("^3[desync-multichar] Setting up characters^7")
-    
---     -- Store characters for later use
---     characters = dbCharacters
-    
---     -- Set up the peds immediately when we get the character data
---     SetupCharacterPeds(dbCharacters)
-    
---     -- Send to NUI
---     SendNUIMessage({
---         type = 'setCharacters',
---         characters = dbCharacters
---     })
--- end)
 
 -- Test command
 RegisterCommand('testcharselect', function()
@@ -305,14 +223,6 @@ RegisterCommand('testcharselect', function()
     -- ShowCharacterSelect()
 end, false)
 
--- Handle character selection
-RegisterNUICallback('selectCharacter', function(data, cb)
-    -- print("^2[desync-multichar] Selected character: " .. data.characterId .. "^7")
-    SetNuiFocus(false, false)
-    -- Add your character spawn logic here
-    
-    cb({})
-end)
 
 RegisterNUICallback('desync-multichar:hideui', function(_, cb)
     -- print("^2[desync-multichar] Hiding UI^7")
@@ -347,76 +257,12 @@ RegisterNUICallback('deleteCharacter', function(data, cb)
     cb({})
 end)
 
--- Handle character limit reached
-RegisterNetEvent('desync-multichar:characterLimitReached')
-AddEventHandler('desync-multichar:characterLimitReached', function()
-    -- print("^1[desync-multichar] Character limit reached^7")
-end)
-
--- When showing the UI
-RegisterNetEvent('desync-multichar:show')
-AddEventHandler('desync-multichar:show', function()
-    SetNuiFocus(true, true)
-    SendNUIMessage({
-        type = 'ui',
-        status = true,
-        maxCharacters = Config.MaxCharacters
-    })
-end)
-
--- Update this callback to match the UI's call
-RegisterNUICallback('spawnCharacter', function(data, cb)
-    if not data.characterId then
-        print("=================== No character ID provided ======================")
-        return cb({ success = false })
-    end
-    
-    -- Hide character select UI
-    SendNUIMessage({
-        type = 'ui',
-        status = false
-    })
-
-    print('======================= NUICallback spawnCharacter called ==========================')
-
-    -- Show spawn selection UI and pass character ID
-    print(data.characterId)
-    TriggerEvent("desync-spawnselect:ShowUI", data.characterId)
-    
-    cb({success = true})
-end)
 
 -- Add new NUI callback
 RegisterNUICallback('focusCharacter', function(data, cb)
     FocusOnCharacter(data.characterId)
     cb({})
 end)
-
--- Add this function to handle camera rotation
-local function UpdateCameraRotation()
-    -- Only update if we're rotating
-    if not isRotatingCamera or not activeCam then return end
-    
-    -- Get current mouse position
-    local mouseX, _ = GetNuiCursorPosition()
-    local mouseDelta = mouseX - lastMouseX
-    lastMouseX = mouseX
-    
-    -- Update rotation (adjust sensitivity by changing the division factor)
-    currentCamRotation = currentCamRotation + (mouseDelta / 10)
-    
-    -- Calculate new camera position based on rotation
-    local radius = 4.0 -- Distance from center point
-    local centerPoint = Config.CHARACTER_ROOM.coords
-    local camHeight = 1.0 -- Height offset from center
-    
-    local newX = centerPoint.x + (radius * math.cos(math.rad(currentCamRotation)))
-    local newY = centerPoint.y + (radius * math.sin(math.rad(currentCamRotation)))
-    
-    -- Update camera
-    SetCamCoord(activeCam, newX, newY, centerPoint.z + camHeight)
-    PointCamAtCoord(activeCam, centerPoint.x, centerPoint.y, centerPoint.z)
-end
 
 
 -- Add cleanup function
@@ -464,20 +310,6 @@ AddEventHandler('onResourceStop', function(resourceName)
     CleanupCharacterSelect()
 end)
 
--- Update spawn selection to NOT spawn peds (since they're already spawned)
--- RegisterNetEvent("desync-spawnselect:ShowUI")
--- AddEventHandler("desync-spawnselect:ShowUI", function(characterId)
---     -- Store the character ID
---     selectedCharId = characterId
-    
---     -- Show the spawn selection UI
---     SetNuiFocus(true, true)
---     TriggerServerEvent("desync-spawnselect:getSpawnPoints")
---     SendNUIMessage({
---         type = 'ui',
---         status = true
---     })
--- end)
 
 -- Clean up peds when spawn is selected
 RegisterNUICallback('spawnAtLocation', function(data, cb)
@@ -492,43 +324,12 @@ RegisterNUICallback('spawnAtLocation', function(data, cb)
         type = 'ui',
         status = false
     })
-
-    -- TriggerServerEvent("desync-multichar:CharacterSelected", selectedCharId, data.coords)
     
     selectedCharId = nil
     cb({success = true})
 end)
 
--- Add ESC key handler
-CreateThread(function()
-    while true do
-        Wait(0)
-        if IsControlJustReleased(0, 200) then -- ESC key
-            SendNUIMessage({
-                type = 'ui',
-                status = false
-            })
-            CleanupCharacterSelect()
-            SetNuiFocus(false, false)
-        end
-    end
-end)
 
--- Add this event handler for when character spawns
-RegisterNetEvent("desync-multichar:CharacterSpawned")
-AddEventHandler("desync-multichar:CharacterSpawned", function()
-    -- Make sure camera is cleaned up
-    if activeCam then
-        RenderScriptCams(false, true, 1000, true, true)
-        DestroyCam(activeCam, true)
-        activeCam = nil
-    end
-    
-    -- Make sure player is visible and unfrozen
-    local ped = PlayerPedId()
-    SetEntityVisible(ped, true)
-    FreezeEntityPosition(ped, false)
-end)
 
 -- Add this event handler for cleanup
 RegisterNetEvent("desync-multichar:cleanup")
@@ -547,12 +348,8 @@ RegisterNUICallback('switchToSpawnSelect', function(data, cb)
         type = 'ui',
         status = false
     })
+
     SetNuiFocus(false, false)
-
-    -- Clean up character select
-    CleanupCharacterSelect()
-
-    TriggerServerEvent("desync-multichar:CharacterSelected", data.characterId)
     
     -- Trigger spawn selection UI
     TriggerEvent("desync-spawnselect:ShowUI", data.characterId)

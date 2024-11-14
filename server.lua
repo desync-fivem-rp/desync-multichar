@@ -24,6 +24,7 @@ end)
 
 -- Get characters for player
 lib.callback.register("desync-multichar:getCharacters", function(source)
+
     local source = source
     local baseIdentifier = string.match(GetPlayerIdentifier(source), ":(.*)")
 
