@@ -9,7 +9,7 @@ export async function fetchNui(eventName, data) {
         ? window.GetParentResourceName() 
         : 'desync-multichar'
 
-    console.log(`[fetchNui] Sending request to ${resourceName}/${eventName}`, data)
+    // console.log(`[fetchNui] Sending request to ${resourceName}/${eventName}`, data)
     
     const options = {
         method: 'POST',
@@ -20,23 +20,23 @@ export async function fetchNui(eventName, data) {
     }
   
     try {
-        console.log(`[fetchNui] Fetching from https://${resourceName}/${eventName}`)
+        // console.log(`[fetchNui] Fetching from https://${resourceName}/${eventName}`)
         const resp = await fetch(`https://${resourceName}/${eventName}`, options)
-        console.log('[fetchNui] Raw response:', resp)
+        // console.log('[fetchNui] Raw response:', resp)
         
         const responseText = await resp.text()
-        console.log('[fetchNui] Response text:', responseText)
+        // console.log('[fetchNui] Response text:', responseText)
         
         if (!responseText) {
-            console.log('[fetchNui] Empty response, returning null')
+            // console.log('[fetchNui] Empty response, returning null')
             return null
         }
 
         const parsedResponse = JSON.parse(responseText)
-        console.log('[fetchNui] Parsed response:', parsedResponse)
+        // console.log('[fetchNui] Parsed response:', parsedResponse)
         return parsedResponse
     } catch (error) {
-        console.error(`[fetchNui] Error:`, error)
+        // console.error(`[fetchNui] Error:`, error)
         throw error
     }
 } 

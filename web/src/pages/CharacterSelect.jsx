@@ -8,19 +8,20 @@ function CharacterSelect() {
   const [isCreating, setIsCreating] = useState(false)
   
   useEffect(() => {
-    console.log('CharacterSelect mounted')
+    // console.log('CharacterSelect mounted')
     
     const handleMessage = (event) => {
       const data = event.data
-      console.log('Received message:', data)
+      // console.log('Received message:', data)
       
       if (data.type === 'ui' && data.action === 'showCharacterSelect') {
-        console.log('Setting visible to:', data.status)
+        // console.log('Setting visible to:', data.status)
         setVisible(data.status)
+
       }
 
       if (data.type === 'setCharacters') {
-        console.log('Setting characters:', data.characters)
+        // console.log('Setting characters:', data.characters)
         setCharacters(data.characters || [])
       }
     }
@@ -29,7 +30,10 @@ function CharacterSelect() {
     return () => window.removeEventListener('message', handleMessage)
   }, [])
 
-  if (!visible) return null
+  if (!visible) {
+    return null
+  }
+    
 
   return (
     <div className="character-select" style={{
@@ -62,7 +66,7 @@ function CharacterSelect() {
             ) : (
               characters.map(char => (
                 <div 
-                  key={char.Identifierentifier} 
+                  key={char.Identifier} 
                   className="character-card" 
                   style={{
                     padding: '20px',
@@ -73,6 +77,7 @@ function CharacterSelect() {
                   }}
                   onClick={() => {
                     console.log('Selected character:', char.Identifier)
+                    console.log("=======================================")
                     fetchNui('selectCharacter', { characterId: char.Identifier })
                   }}
                 >
@@ -102,7 +107,7 @@ function CharacterSelect() {
               cursor: 'pointer',
               fontSize: '16px'
             }} onClick={() => {
-              console.log('Close button clicked')
+              // console.log('Close button clicked')
               setVisible(false)
               fetchNui('desync-multichar:hideui')
             }}>Close</button>

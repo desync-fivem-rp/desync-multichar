@@ -12,14 +12,14 @@ function CreateCharacter({ onCancel, onCreated, characters, maxCharacters }) {
   useEffect(() => {
     const handleMessage = (event) => {
       const data = event.data
-      console.log('Received message in CreateCharacter:', data)
+      // console.log('Received message in CreateCharacter:', data)
       
       if (data.type === 'createCharacterResponse') {
         if (data.success) {
-          console.log('Character created successfully')
+          // console.log('Character created successfully')
           onCreated()
         } else {
-          console.error('Character creation failed:', data.error)
+          // console.error('Character creation failed:', data.error)
           setError(data.error || 'Failed to create character')
         }
       }
@@ -44,16 +44,16 @@ function CreateCharacter({ onCancel, onCreated, characters, maxCharacters }) {
     }
 
     try {
-      console.log('Submitting character creation:', formData)
+      // console.log('Submitting character creation:', formData)
       await fetchNui('createCharacter', {
         firstname: formData.firstname,
         lastname: formData.lastname
       })
       
-      console.log('Character creation request sent')
+      // console.log('Character creation request sent')
       onCancel()
     } catch (error) {
-      console.error('Error creating character:', error)
+      // console.error('Error creating character:', error)
       setError('Failed to submit character creation request')
     }
   }

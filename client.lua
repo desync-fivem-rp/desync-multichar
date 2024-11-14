@@ -9,7 +9,7 @@ local characterPeds = {}
 function Init()
     Citizen.CreateThread(function()
         while not NetworkIsPlayerActive(PlayerId()) do
-            print("NetworkIsPlayerActive is false")
+            -- print("NetworkIsPlayerActive is false")
             Citizen.Wait(100)
         end
     
@@ -99,7 +99,7 @@ function FocusOnCharacter(characterId)
     
     SetCamCoord(newCam, camCoords.x, camCoords.y, camCoords.z)
     PointCamAtEntity(newCam, pedInfo.ped, 0.0, 0.0, 0.0, true)
-    SetCamFov(newCam, ConfigCHARACTER_ROOM.cameras.character.fov)
+    SetCamFov(newCam, Config.CHARACTER_ROOM.cameras.character.fov)
     
     -- Smooth transition to new camera
     SetCamActiveWithInterp(newCam, activeCam, 1000, true, true)
@@ -310,10 +310,7 @@ RegisterNUICallback('selectCharacter', function(data, cb)
     -- print("^2[desync-multichar] Selected character: " .. data.characterId .. "^7")
     SetNuiFocus(false, false)
     -- Add your character spawn logic here
-
-    print('NUICallback selectCharacter called')
-
-	TriggerServerEvent("desync-multichar:CharacterSelected", data.characterId)
+    
     cb({})
 end)
 
@@ -353,7 +350,7 @@ end)
 -- Handle character limit reached
 RegisterNetEvent('desync-multichar:characterLimitReached')
 AddEventHandler('desync-multichar:characterLimitReached', function()
-    print("^1[desync-multichar] Character limit reached^7")
+    -- print("^1[desync-multichar] Character limit reached^7")
 end)
 
 -- When showing the UI
@@ -369,7 +366,10 @@ end)
 
 -- Update this callback to match the UI's call
 RegisterNUICallback('spawnCharacter', function(data, cb)
-    if not data.characterId then return cb({ success = false }) end
+    if not data.characterId then
+        print("=================== No character ID provided ======================")
+        return cb({ success = false })
+    end
     
     -- Hide character select UI
     SendNUIMessage({
@@ -377,7 +377,10 @@ RegisterNUICallback('spawnCharacter', function(data, cb)
         status = false
     })
 
+    print('======================= NUICallback spawnCharacter called ==========================')
+
     -- Show spawn selection UI and pass character ID
+    print(data.characterId)
     TriggerEvent("desync-spawnselect:ShowUI", data.characterId)
     
     cb({success = true})
@@ -418,7 +421,7 @@ end
 
 -- Add cleanup function
 local function CleanupCharacterSelect()
-    print("^3[desync-multichar] Cleaning up character select^7")
+    -- print("^3[desync-multichar] Cleaning up character select^7")
     
     -- Reset camera
     if activeCam then
@@ -430,7 +433,7 @@ local function CleanupCharacterSelect()
     -- Clean up peds
     for _, pedInfo in pairs(characterPeds) do
         if pedInfo and pedInfo.ped then
-            print("^3[desync-multichar] Cleaning up ped: " .. tostring(pedInfo.ped) .. "^7")
+            -- print("^3[desync-multichar] Cleaning up ped: " .. tostring(pedInfo.ped) .. "^7")
             if DoesEntityExist(pedInfo.ped) then
                 DeleteEntity(pedInfo.ped)
                 SetEntityAsNoLongerNeeded(pedInfo.ped)
@@ -457,24 +460,24 @@ end
 -- Make sure cleanup happens when resource stops
 AddEventHandler('onResourceStop', function(resourceName)
     if (GetCurrentResourceName() ~= resourceName) then return end
-    print("^3[desync-multichar] Resource stopping, cleaning up^7")
+    -- print("^3[desync-multichar] Resource stopping, cleaning up^7")
     CleanupCharacterSelect()
 end)
 
 -- Update spawn selection to NOT spawn peds (since they're already spawned)
-RegisterNetEvent("desync-spawnselect:ShowUI")
-AddEventHandler("desync-spawnselect:ShowUI", function(characterId)
-    -- Store the character ID
-    selectedCharId = characterId
+-- RegisterNetEvent("desync-spawnselect:ShowUI")
+-- AddEventHandler("desync-spawnselect:ShowUI", function(characterId)
+--     -- Store the character ID
+--     selectedCharId = characterId
     
-    -- Show the spawn selection UI
-    SetNuiFocus(true, true)
-    TriggerServerEvent("desync-spawnselect:getSpawnPoints")
-    SendNUIMessage({
-        type = 'ui',
-        status = true
-    })
-end)
+--     -- Show the spawn selection UI
+--     SetNuiFocus(true, true)
+--     TriggerServerEvent("desync-spawnselect:getSpawnPoints")
+--     SendNUIMessage({
+--         type = 'ui',
+--         status = true
+--     })
+-- end)
 
 -- Clean up peds when spawn is selected
 RegisterNUICallback('spawnAtLocation', function(data, cb)
@@ -490,10 +493,7 @@ RegisterNUICallback('spawnAtLocation', function(data, cb)
         status = false
     })
 
-    -- Spawn at selected location
-    if data.coords then
-        TriggerServerEvent("desync-multichar:CharacterSelected", selectedCharId, data.coords)
-    end
+    -- TriggerServerEvent("desync-multichar:CharacterSelected", selectedCharId, data.coords)
     
     selectedCharId = nil
     cb({success = true})
@@ -533,12 +533,14 @@ end)
 -- Add this event handler for cleanup
 RegisterNetEvent("desync-multichar:cleanup")
 AddEventHandler("desync-multichar:cleanup", function()
-    print("^3[desync-multichar] Cleanup triggered from spawn selection^7")
+    -- print("^3[desync-multichar] Cleanup triggered from spawn selection^7")
     CleanupCharacterSelect()
 end)
 
 RegisterNUICallback('switchToSpawnSelect', function(data, cb)
-    if not data.characterId then return cb({ success = false }) end
+    if not data.characterId then
+        return cb({ success = false })
+    end
     
     -- Hide character select UI
     SendNUIMessage({
@@ -549,6 +551,8 @@ RegisterNUICallback('switchToSpawnSelect', function(data, cb)
 
     -- Clean up character select
     CleanupCharacterSelect()
+
+    TriggerServerEvent("desync-multichar:CharacterSelected", data.characterId)
     
     -- Trigger spawn selection UI
     TriggerEvent("desync-spawnselect:ShowUI", data.characterId)

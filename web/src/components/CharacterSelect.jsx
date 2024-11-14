@@ -13,24 +13,24 @@ function CharacterSelect() {
   const [cameraMode, setCameraMode] = useState('overview') // 'overview' or 'focused'
   
   const refreshCharacters = async () => {
-    console.log('[CharacterSelect] Attempting to refresh characters')
+    // console.log('[CharacterSelect] Attempting to refresh characters')
     try {
       const response = await fetchNui('getCharacters')
-      console.log('[CharacterSelect] getCharacters response:', response)
+      // console.log('[CharacterSelect] getCharacters response:', response)
     } catch (error) {
-      console.error('[CharacterSelect] Error refreshing characters:', error)
+      // console.error('[CharacterSelect] Error refreshing characters:', error)
     }
   }
 
   useEffect(() => {
-    console.log('[CharacterSelect] Component mounted')
+    // console.log('[CharacterSelect] Component mounted')
     
     const handleMessage = (event) => {
       const data = event.data
-      console.log('[CharacterSelect] Received message:', data)
+      // console.log('[CharacterSelect] Received message:', data)
       
       if (data.type === 'ui') {
-        console.log('[CharacterSelect] UI visibility changed:', data.status)
+        // console.log('[CharacterSelect] UI visibility changed:', data.status)
         setVisible(data.status)
         if (!data.status) {
           // Clean up when hiding UI
@@ -39,11 +39,11 @@ function CharacterSelect() {
           fetchNui('desync-multichar:hideui')
         }
         if (data.maxCharacters) {
-          console.log('[CharacterSelect] Max characters set to:', data.maxCharacters)
+          // console.log('[CharacterSelect] Max characters set to:', data.maxCharacters)
           setMaxCharacters(data.maxCharacters)
         }
       } else if (data.type === 'setCharacters') {
-        console.log('[CharacterSelect] Setting characters:', data.characters)
+        // console.log('[CharacterSelect] Setting characters:', data.characters)
         setCharacters(Array.isArray(data.characters) ? data.characters : [])
       }
     }
@@ -52,10 +52,10 @@ function CharacterSelect() {
     refreshCharacters()
     
     window.addEventListener('message', handleMessage)
-    console.log('[CharacterSelect] Message event listener attached')
+    // console.log('[CharacterSelect] Message event listener attached')
     
     return () => {
-      console.log('[CharacterSelect] Component unmounting, removing event listener')
+      // console.log('[CharacterSelect] Component unmounting, removing event listener')
       window.removeEventListener('message', handleMessage)
       // Clean up when component unmounts
       fetchNui('desync-multichar:hideui')
@@ -64,7 +64,7 @@ function CharacterSelect() {
 
   // Log when visibility changes
   useEffect(() => {
-    console.log('[CharacterSelect] Visibility changed:', visible)
+    // console.log('[CharacterSelect] Visibility changed:', visible)
   }, [visible])
 
   // Prevent right-click menu when rotating camera
@@ -91,14 +91,16 @@ function CharacterSelect() {
   }
 
   const handleSpawnConfirm = async () => {
-    if (!selectedCharacter) return
+    if (!selectedCharacter) {
+      return
+    }
     
     try {
         // Just tell the client to switch to spawn selection
         await fetchNui('switchToSpawnSelect', { characterId: selectedCharacter })
         setVisible(false)
     } catch (error) {
-        console.error('[CharacterSelect] Error switching to spawn selection:', error)
+        // console.error('[CharacterSelect] Error switching to spawn selection:', error)
     }
   }
 
@@ -107,12 +109,12 @@ function CharacterSelect() {
       await fetchNui('deleteCharacter', { characterId: charId })
       await refreshCharacters() // Refresh the list after deletion
     } catch (error) {
-      console.error('Error deleting character:', error)
+      // console.error('Error deleting character:', error)
     }
   }
 
   const handleCharacterCreated = async () => {
-    console.log('Character created, refreshing list')
+    // console.log('Character created, refreshing list')
     await refreshCharacters() // Refresh the list to show new character
     setView('list') // Switch back to list view
   }

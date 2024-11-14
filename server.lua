@@ -187,8 +187,6 @@ AddEventHandler('desync-multichar:CharacterSelected', function(characterId)
     local source = source
     
     -- Your existing character loading logic here
-
-    print("desync-multichar:CharacterSelected called")    
     
     -- Instead of using LastPosition, use the provided spawn coordinates
     TriggerEvent("desync-core-rp:OnPlayerJoined", source, characterId)
