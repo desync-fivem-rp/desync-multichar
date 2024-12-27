@@ -1,37 +1,32 @@
------------------For support, scripts, and more----------------
---------------- https://discord.gg/wasabiscripts  -------------
----------------------------------------------------------------
-fx_version 'cerulean'
-game 'gta5'
+fx_version "cerulean"
+
+description "Basic React (TypeScript) & Lua Game Scripts Boilerplate"
+author "Project Error"
+version '1.0.0'
+repository 'https://github.com/project-error/fivem-react-boilerplate-lua'
+
 lua54 'yes'
 
-description 'Multi Character Framework for Desync'
-author 'Braanflakes'
-version '1.0.0'
-
-shared_scripts {
-  '@ox_lib/init.lua',
-  'config.lua',
-}
-
-client_scripts {
-  'client.lua'
-}
-
-server_scripts {
-  '@oxmysql/lib/MySQL.lua',
-  'server.lua'
+games {
+  "gta5",
+  "rdr3"
 }
 
 ui_page 'web/build/index.html'
 
-files {
-  'web/build/index.html',
-  'web/build/**/*'
+shared_scripts {
+  '@ox_lib/init.lua',
+  '@ox_core/lib/init.lua',
+  'config.lua',
 }
 
-dependency 'spawnmanager'
+client_script "client/**/*"
+server_scripts {
+  '@oxmysql/lib/MySQL.lua',
+  "server/**/*"
+}
 
-exports {
-    'ShowCharacterSelect'
+files {
+	'web/build/index.html',
+	'web/build/**/*',
 }

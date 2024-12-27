@@ -1,9 +1,9 @@
-/* Add this if you don't have a CSS file yet, or add to your existing styles */
 .character-select-container {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
     padding: 1rem;
     width: 100%;
 }
@@ -22,7 +22,7 @@
 }
 
 .character-card {
-    background: none; /* Ensure no background color is applied */
+    background: rgba(0, 0, 0, 0.85);
     border: 2px solid rgba(255, 255, 255, 0.2);
     padding: 1rem;
     border-radius: 8px;
@@ -32,6 +32,7 @@
     transition: all 0.2s;
     color: white;
     text-align: center;
+    backdrop-filter: blur(5px);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -51,8 +52,9 @@
 .character-card.selected {
     border-color: #0080ff;
     transform: translateY(-5px);
-    box-shadow: 0 0 15px rgba(0, 128, 255, 0.3);
-}
+    outline: 2px solid #0080ff;
+    outline-offset: -2px;
+  }
 
 .character-card h3 {
     margin: 0 0 0.5rem 0;
@@ -60,15 +62,15 @@
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.character-card.new-character {
+/* .character-card.new-character {
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(0, 128, 255, 0.15);
     border: 2px dashed rgba(255, 255, 255, 0.4);
-}
+} */
 
-.spawn-button, .delete-button {
+.play-button, .delete-button {
     padding: 0.8rem 2rem;
     border: none;
     border-radius: 6px;
@@ -78,11 +80,11 @@
     transition: all 0.2s;
 }
 
-.spawn-button {
+.play-button {
     background: #0080ff;
 }
 
-.spawn-button:hover {
+.play-button:hover {
     background: #0066cc;
     transform: translateY(-2px);
 }
@@ -96,8 +98,24 @@
     transform: translateY(-2px);
 }
 
+.character-list::-webkit-scrollbar {
+    height: 5px;
+}
 
-/* Add styles for the action buttons container */
+.character-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.character-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+}
+
+.character-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
 .character-actions {
     position: absolute;
     bottom: 100%;
@@ -106,4 +124,46 @@
     display: flex;
     gap: 1rem;
     margin-bottom: 1rem;
-} 
+}
+
+.confirmation-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #333;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    width: 300px;
+    text-align: center;
+    color: #fff;
+  }
+  
+  .confirmation-dialog button {
+    padding: 0.8rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 0 1rem;
+  }
+  
+  .confirmation-dialog .yes-button {
+    background: #4CAF50;
+    color: #fff;
+  }
+  
+  .confirmation-dialog .yes-button:hover {
+    background: #3e8e41;
+  }
+  
+  .confirmation-dialog .no-button {
+    background: #e74c3c;
+    color: #fff;
+  }
+  
+  .confirmation-dialog .no-button:hover {
+    background: #c0392b;
+  }
