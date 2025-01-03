@@ -11,16 +11,16 @@ local function toggleNuiFrame(shouldShow)
     SendReactMessage('setVisible', shouldShow)
 end
 
-RegisterCommand('show-nui', function()
-    Init()
-    -- toggleNuiFrame(true)
-    -- debugPrint('Show NUI frame')
-end)
+-- RegisterCommand('show-nui', function()
+--     Init()
+--     -- toggleNuiFrame(true)
+--     -- debugPrint('Show NUI frame')
+-- end)
 
 RegisterNUICallback('hideFrame', function(_, cb)
     toggleNuiFrame(false)
     debugPrint('Hide NUI frame')
-    cb({})
+    cb({success = true})
 end)
 
 RegisterNUICallback('getClientData', function(data, cb)
@@ -40,11 +40,14 @@ RegisterNUICallback('characterSelected', function(data, cb)
     -- DoScreenFadeOut(500)
     -- Citizen.Wait(500)
 
+    TriggerServerEvent("ox:setActiveCharacter", data.charId)
+
     SwitchOutPlayer(cache.ped, 1 + 8192, 1)
 
     CleanupCharacterSelect()
 
-    TriggerServerEvent("ox:setActiveCharacter", data.charId)
+    -- local appearance = exports.bl_appearance:GetPlayerPedAppearance(cache.ped)
+    -- exports.bl_appearance:SetPlayerPedAppearance(appearance)
 
     TriggerEvent("desync-spawnselect:ShowUI", data.charId)
 
@@ -53,12 +56,12 @@ end)
 
 RegisterNUICallback('focusOnCharacterOverview', function(data, cb)
     FocusOnCharacterOverview()
-    cb({})
+    cb({success = true})
 end)
 
 RegisterNUICallback('focusOnCharacter', function(data, cb)
     FocusOnCharacter(data.charId)
-    cb({})
+    cb({success = true})
 end)
 
 RegisterNUICallback('focusOnNewCharacter', function(data, cb)
@@ -72,10 +75,57 @@ RegisterNUICallback('deleteCharacter', function(data, cb)
 end)
 
 RegisterNUICallback('createCharacter', function(data, cb)
-    local eventId = math.random(1, 1000)
     TriggerServerEvent("desync-multichar2:createCharacter", data, userId)
-    -- TriggerServerEvent("desync-test:ayo", eventId)
-    cb({})
+
+    cb({success = true})
+end)
+
+RegisterNetEvent("desync-multichar:OnCharacterCreation")
+AddEventHandler("desync-multichar:OnCharacterCreation", function(charId)
+    if not charId then
+        print("Somehow we fucked up bad")
+        return
+    end
+
+    data = {
+        coords = {
+            x = Config.CHARACTER_CUSTOMIZATION.coords.x,
+            y =Config.CHARACTER_CUSTOMIZATION.coords.y,
+            z = Config.CHARACTER_CUSTOMIZATION.coords.z,
+            heading = Config.CHARACTER_CUSTOMIZATION.heading
+        },
+        charId = charId
+    }
+
+    -- Set up camera and make character visible so we can customize it?
+
+    DoScreenFadeOut(1000)
+    while not IsScreenFadedOut() do Wait(0) end
+    -- Citizen.Wait(500)
+
+    TriggerServerEvent("desync-spawnmanager:RequestSpawn", data)
+
+    toggleNuiFrame(false)
+    CleanupCharacterSelect()
+
+    TriggerServerEvent("ox:setActiveCharacter", charId)
+
+    DoScreenFadeIn(1000)
+    -- while not IsScreenFadedIn() do Wait(0) end
+
+    exports.bl_appearance:InitialCreation(function()
+        DoScreenFadeOut(1000)
+        while not IsScreenFadedOut() do Wait(0) end
+
+        Init()
+
+        Citizen.Wait(1000)
+
+        DoScreenFadeIn(1000)
+        while not IsScreenFadedIn() do Wait(0) end
+
+    end)
+    -- Citizen.Wait(500)
 end)
 
 RegisterNetEvent('desync-multichar2:setCharacters')
@@ -84,15 +134,6 @@ AddEventHandler('desync-multichar2:setCharacters', function(dbCharacters)
     characters = dbCharacters
 
     DisplayCharacterSelection()
-    
-    -- Set up the peds immediately when we get the character data
-    -- SetupCharacterPeds(dbCharacters)
-    
-    -- Send to NUI
-    -- SendNUIMessage({
-    --     type = 'setCharacters',
-    --     characters = dbCharacters
-    -- })
 end)
 
 function Init()
@@ -127,7 +168,7 @@ function Init()
     DisplayCharacterSelection()
 
     -- Fade the screen in after we set up the scene
-    DoScreenFadeIn(500)
+    DoScreenFadeIn(1000)
 end
 
 function DisplayCharacterSelection()
@@ -163,7 +204,7 @@ function DisplayCharacterSelection()
         characters = result
     }
 
-    SendReactMessage('test', data)
+    -- SendReactMessage('test', data)
     SendReactMessage('init', data)
 
     -- Set up character peds
@@ -201,33 +242,42 @@ end
 
 function FocusOnCharacter(characterId)
     local pedInfo = characterPeds[characterId]
-    if not pedInfo then return end
+    if not pedInfo then
+        return
+    end
     
     -- Create new camera
     local newCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-    local offset = Config.CHARACTER_ROOM.cameras.character.offset
+    -- local offset = Config.CHARACTER_ROOM.cameras.character.offset
+    local positionalOffset = pedInfo.camera.positionalOffset
     local pedCoords = GetEntityCoords(pedInfo.ped)
     
     -- Position camera relative to ped
     local camCoords = vector3(
-        pedCoords.x - offset.x,
-        pedCoords.y - offset.y,
-        pedCoords.z + offset.z
+        pedCoords.x + positionalOffset.x,
+        pedCoords.y + positionalOffset.y,
+        pedCoords.z + positionalOffset.z
     )
+
+    local rotationalOffset = pedInfo.camera.rotationalOffset
     
     SetCamCoord(newCam, camCoords.x, camCoords.y, camCoords.z)
-    PointCamAtEntity(newCam, pedInfo.ped, 0.0, 0.0, 0.0, true)
-    SetCamFov(newCam, Config.CHARACTER_ROOM.cameras.character.fov)
+    PointCamAtEntity(newCam, pedInfo.ped, rotationalOffset.x, rotationalOffset.y, rotationalOffset.z, true)
+    -- SetCamFov(newCam, Config.CHARACTER_ROOM.cameras.character.fov)
+    SetCamFov(newCam, pedInfo.camera.fov)
     
     -- Smooth transition to new camera
     SetCamActiveWithInterp(newCam, activeCam, 1000, true, true)
+    RenderScriptCams(true, false, 1000, true, true)
     
     -- Update active camera
     activeCam = newCam
 end
 
 function SetupCharacterPeds(characters)
-    if not characters then return end
+    if not characters then
+        return
+    end
 
     -- Clear existing peds
     for _, pedInfo in pairs(characterPeds) do
@@ -241,26 +291,34 @@ function SetupCharacterPeds(characters)
     
     -- Create new peds for each character
     for i, character in ipairs(characters) do
-        -- if Config.CHARACTER_ROOM.positions[i] then
         local position = Config.CHARACTER_ROOM.positions[i]
-        
-        -- Safety check for character ID
-        -- if not character.id then
-        --     -- print("^1[desync-multichar] Character missing ID at index " .. i .. "^7")
-        --     goto continue
-        -- end
-        
-        -- print("^3[desync-multichar] Creating ped for character:", json.encode(character))
-        
+        local camera = Config.CHARACTER_ROOM.positions[i].camera
+
+        local charId = character.charId
+        local appearance = exports.bl_appearance:GetPlayerPedAppearance(charId)
+        local model = nil
+
+        if not appearance then
+            print("could not get appearance for character " .. charId)
+            model = GetHashKey("mp_m_freemode_01")
+        else
+            model = appearance.model
+        end
+
         -- Create ped
-        local model = GetHashKey("mp_m_freemode_01")
+        -- local model = GetHashKey("mp_m_freemode_01")        -- TODO: need to update this to getting the player's model from sql instead
         RequestModel(model)
         while not HasModelLoaded(model) do Wait(0) end
         
         local ped = CreatePed(4, model, 
             position.coords.x, position.coords.y, position.coords.z, 
             position.heading, false, true)
-            
+        
+        -- Set appearance of ped from sql
+        if appearance then
+            exports.bl_appearance:SetPedAppearance(ped, appearance)
+        end
+
         -- Set up ped
         FreezeEntityPosition(ped, true)
         SetEntityInvincible(ped, true)
@@ -279,7 +337,8 @@ function SetupCharacterPeds(characters)
         -- Store ped reference
         characterPeds[character.charId] = {
             ped = ped,
-            position = position
+            position = position,
+            camera = camera
         }
             
             -- ::continue::
@@ -287,6 +346,8 @@ function SetupCharacterPeds(characters)
     end
     
     SetModelAsNoLongerNeeded(model)
+
+    ::continue::
 end
 
 function CleanupCharacterSelect()
@@ -307,6 +368,13 @@ function CleanupCharacterSelect()
             end
         end
     end
+
+    if DoesEntityExist(newCharacterPed.ped) then
+        DeleteEntity(newCharacterPed.ped)
+        SetEntityAsNoLongerNeeded(newCharacterPed.ped)
+        DeletePed(newCharacterPed.ped)
+    end
+
     characterPeds = {}
     newCharacterPed = {}
     
@@ -367,7 +435,7 @@ function FocusOnNewCharacter()
 
     -- Create new camera
     local newCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-    local offset = Config.CHARACTER_ROOM.cameras.character.offset
+    local offset = Config.CHARACTER_ROOM.cameras.newCharacter.offset
     local pedCoords = GetEntityCoords(pedInfo.ped)
     
     -- Position camera relative to ped
@@ -379,10 +447,11 @@ function FocusOnNewCharacter()
     
     SetCamCoord(newCam, camCoords.x, camCoords.y, camCoords.z)
     PointCamAtEntity(newCam, pedInfo.ped, 0.0, 0.0, 0.0, true)
-    SetCamFov(newCam, Config.CHARACTER_ROOM.cameras.character.fov)
+    SetCamFov(newCam, Config.CHARACTER_ROOM.cameras.newCharacter.fov)
     
     -- Smooth transition to new camera
     SetCamActiveWithInterp(newCam, activeCam, 1000, true, true)
+    RenderScriptCams(true, false, 1000, true, true)
     
     -- Update active camera
     activeCam = newCam

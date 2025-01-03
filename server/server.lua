@@ -18,14 +18,21 @@ AddEventHandler("desync-multichar2:createCharacter", function(data, userId)
 
     local player = Ox.GetPlayer(source)
     local index = player.createCharacter(playerData)
-    
+
     local result = nil
     while result == nil do
-        result = MySQL.query.await("SELECT * FROM Characters WHERE userId = ? AND deleted IS NULL", {userId})
+        result = MySQL.query.await("SELECT * FROM Characters WHERE userId = ? AND deleted IS NULL ORDER BY charId DESC LIMIT 1", {userId})
         Citizen.Wait(100)
     end
+    
+    -- local result = nil
+    -- while result == nil do
+    --     result = MySQL.query.await("SELECT * FROM Characters WHERE userId = ? AND deleted IS NULL", {userId})
+    --     Citizen.Wait(100)
+    -- end
 
-    TriggerClientEvent('desync-multichar2:setCharacters', source, result or {})
+    TriggerClientEvent("desync-multichar:OnCharacterCreation", source, result[1].charId)
+    -- TriggerClientEvent('desync-multichar2:setCharacters', source, result or {})
 end)
 
 RegisterNetEvent('desync-multichar2:deleteCharacter')

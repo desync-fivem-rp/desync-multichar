@@ -41,6 +41,9 @@ const CharacterSelect: React.FC = () => {
     useNuiEvent<initialData>('init', (data) => {
         setMaxCharacters(data.maxCharacters);
         setCharacters(data.characters);
+        setShowCreateCharacter(false);
+        setSelectedCharacter(null);
+        setAttemptingToDeleteCharacter(false);
     });
 
     const handleCharacterSelect = async (charId: number) => {

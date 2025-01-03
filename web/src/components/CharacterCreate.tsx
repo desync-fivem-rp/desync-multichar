@@ -17,7 +17,12 @@ const CharacterCreate: React.FC<Props> = ({onCancel}) => {
         dateOfBirth?: string
     };
 
-    fetchNui('focusOnNewCharacter', {})
+    useEffect(() => {
+        fetchNui('focusOnNewCharacter', {});
+      }, []); // empty dependency array
+
+    // console.log('CharacterCreate rendered');
+    // fetchNui('focusOnNewCharacter', {})
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
